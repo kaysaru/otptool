@@ -1,9 +1,8 @@
 # otptool
 
 Small cross-platform CLI that prints the current TOTP code for one configured account.
-
-The first version is configured for this account's TOTP parameters: HMAC-SHA256,
-six digits, and a 30-second period.
+It supports SHA1, SHA256, and SHA512, codes from six through eight digits, and a
+configurable period.
 
 ## Install and use locally
 
@@ -21,6 +20,29 @@ Configure the TOTP secret once. Input is hidden and the secret is stored in a lo
 otptool setup
 ```
 
+The setup prompts default to SHA256, six digits, and a 30-second period. Press
+Enter to accept a default, or provide all settings as options:
+
+```sh
+otptool setup --algorithm sha256 --digits 6 --period 30
+```
+
+To replace an existing secret or change its settings, run
+`otptool setup --force`. Without `--force`, an existing configuration is never
+overwritten.
+
+The saved TOML configuration looks like this:
+
+```toml
+secret = "..."
+algorithm = "SHA256"
+digits = 6
+period = 30
+```
+
+Older configuration files containing only `secret` remain valid and use the
+SHA256, six-digit, 30-second defaults.
+
 The configuration file is located at:
 
 - Linux: `$XDG_CONFIG_HOME/otptool/otprc`, or `~/.config/otptool/otprc`
@@ -36,7 +58,8 @@ otptool             # code, then seconds until it expires
 otptool --code      # only the code; suitable for pipes
 otptool --copy      # copy the code and print the normal output
 otptool --code --copy
-otptool setup
+otptool setup        # configure the secret, algorithm, digits, and period
+otptool info         # show settings without revealing the secret
 otptool uninstall    # remove the local configuration and TOTP secret
 ```
 
