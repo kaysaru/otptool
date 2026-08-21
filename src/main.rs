@@ -7,22 +7,32 @@ use std::{
 };
 
 #[derive(Parser)]
-#[command(name = "otptool", version, about = "Print the current TOTP code")]
+#[command(
+    name = "otptool",
+    version,
+    about = "Print and copy the current TOTP code",
+    after_help = "Examples:\n  otptool              Print the code and remaining lifetime\n  otptool --code       Print only the code for scripts and pipes\n  otptool --copy       Copy the code and print the normal output\n  otptool -cC          Copy the code and print only the code\n  otptool setup        Configure the TOTP secret\n  otptool uninstall    Remove the saved configuration and secret"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
+    /// Print only the six-digit TOTP code, without the expiry time.
     #[arg(short, long)]
     code: bool,
 
+    /// Copy the current TOTP code to the clipboard.
     #[arg(short = 'C', long)]
     copy: bool,
 }
 
 #[derive(Subcommand)]
 enum Command {
+    /// Securely prompt for and save the TOTP secret.
     Setup,
+    /// Permanently remove the saved configuration and TOTP secret.
     Uninstall {
+        /// Skip the interactive confirmation prompt.
         #[arg(short, long)]
         yes: bool,
     },

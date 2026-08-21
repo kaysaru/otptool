@@ -42,6 +42,9 @@ otptool uninstall    # remove the local configuration and TOTP secret
 
 Short flags are `-c` for `--code` and `-C` for `--copy`; they can be combined as `-cC`.
 
+Run `otptool --help` for a command summary and examples, or
+`otptool <command> --help` for command-specific options.
+
 `otptool uninstall` asks for confirmation before permanently deleting the local
 configuration and secret. Use `otptool uninstall --yes` for non-interactive
 cleanup. Because this is a portable application, the command then prints the
