@@ -59,6 +59,6 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - run: gh release create "${{ github.ref_name }}" dist/* --generate-notes
+      - run: gh release create "${{ github.ref_name }}" dist/* --generate-notes --repo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ github.token }}
