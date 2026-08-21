@@ -37,9 +37,15 @@ otptool --code      # only the code; suitable for pipes
 otptool --copy      # copy the code and print the normal output
 otptool --code --copy
 otptool setup
+otptool uninstall    # remove the local configuration and TOTP secret
 ```
 
 Short flags are `-c` for `--code` and `-C` for `--copy`; they can be combined as `-cC`.
+
+`otptool uninstall` asks for confirmation before permanently deleting the local
+configuration and secret. Use `otptool uninstall --yes` for non-interactive
+cleanup. Because this is a portable application, the command then prints the
+exact executable path that should be deleted to finish uninstalling.
 
 ## Releases
 

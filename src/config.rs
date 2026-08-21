@@ -161,9 +161,43 @@ pub fn config_path() -> Result<PathBuf> {
     anyhow::bail!("otptool does not support this operating system yet")
 }
 
+pub fn remove_config() -> Result<(PathBuf, bool)> {
+    let path = config_path()?;
+    let removed = remove_config_from(&path)?;
+
+    Ok((path, removed))
+}
+
+fn remove_config_from(path: &Path) -> Result<bool> {
+    match fs::remove_file(path) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => {
+            return Err(error).with_context(|| format!("could not remove {}", path.display()));
+        }
+    }
+
+    if let Some(parent) = path.parent() {
+        match fs::remove_dir(parent) {
+            Ok(()) => {}
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::DirectoryNotEmpty
+                ) => {}
+            Err(error) => {
+                return Err(error)
+                    .with_context(|| format!("could not remove empty {}", parent.display()));
+            }
+        }
+    }
+
+    Ok(true)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Config, config_path};
+    use super::{Config, config_path, remove_config_from};
 
     #[test]
     fn config_round_trips_through_toml() {
@@ -220,5 +254,33 @@ mod tests {
             .to_string();
 
         assert_eq!(code, "344551");
+    }
+
+    #[test]
+    fn removes_configuration_and_its_empty_directory() {
+        let directory = tempfile::tempdir().expect("temporary directory should be created");
+        let path = directory.path().join("otptool").join("otprc");
+        let parent = path
+            .parent()
+            .expect("configuration path should have a parent")
+            .to_owned();
+        let config =
+            Config::new("JBSWY3DPEHPK3PXP".to_owned()).expect("test secret should be valid");
+
+        config
+            .write_to(&path)
+            .expect("configuration should be written");
+
+        assert!(remove_config_from(&path).expect("configuration should be removed"));
+        assert!(!path.exists());
+        assert!(!parent.exists());
+    }
+
+    #[test]
+    fn removing_missing_configuration_is_idempotent() {
+        let directory = tempfile::tempdir().expect("temporary directory should be created");
+        let path = directory.path().join("otptool").join("otprc");
+
+        assert!(!remove_config_from(&path).expect("missing configuration should be accepted"));
     }
 }

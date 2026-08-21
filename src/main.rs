@@ -1,6 +1,10 @@
 mod config;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use std::{
+    io::{self, Write},
+    path::Path,
+};
 
 #[derive(Parser)]
 #[command(name = "otptool", version, about = "Print the current TOTP code")]
@@ -18,6 +22,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     Setup,
+    Uninstall {
+        #[arg(short, long)]
+        yes: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -38,6 +46,32 @@ fn main() -> anyhow::Result<()> {
 
             config.write_to(&path)?;
             println!("configuration saved to {}", path.display());
+        }
+        Some(Command::Uninstall { yes }) => {
+            let path = config::config_path()?;
+
+            if !yes && !confirm_uninstall(&path)? {
+                println!("uninstall cancelled");
+                return Ok(());
+            }
+
+            let (path, removed) = config::remove_config()?;
+
+            if removed {
+                println!(
+                    "configuration and TOTP secret removed from {}",
+                    path.display()
+                );
+            } else {
+                println!("no configuration found at {}", path.display());
+            }
+
+            match std::env::current_exe() {
+                Ok(executable) => {
+                    println!("to finish uninstalling, delete {}", executable.display())
+                }
+                Err(_) => println!("to finish uninstalling, delete the otptool executable"),
+            }
         }
         None => {
             let config = config::Config::load()?;
@@ -61,4 +95,24 @@ fn main() -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn confirm_uninstall(path: &Path) -> anyhow::Result<bool> {
+    print!(
+        "Permanently delete the configuration and TOTP secret at {}? [y/N] ",
+        path.display()
+    );
+    io::stdout()
+        .flush()
+        .context("could not display the uninstall prompt")?;
+
+    let mut answer = String::new();
+    io::stdin()
+        .read_line(&mut answer)
+        .context("could not read the uninstall confirmation")?;
+
+    Ok(matches!(
+        answer.trim().to_ascii_lowercase().as_str(),
+        "y" | "yes"
+    ))
 }
